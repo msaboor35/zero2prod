@@ -1,4 +1,5 @@
 use actix_web::{App, HttpServer, HttpResponse, Responder, web, get};
+use actix_web::dev::Server;
 
 #[get("/health_check")]
 async fn health_check() -> impl Responder {
@@ -9,9 +10,10 @@ pub fn configure_app(cfg: &mut web::ServiceConfig) {
     cfg.service(health_check);
 }
 
-pub async fn run() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().configure(configure_app))
+pub fn run() -> Result<Server, std::io::Error> {
+    let server = HttpServer::new(|| App::new().configure(configure_app))
         .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+        .run();
+
+    Ok(server)
 }
