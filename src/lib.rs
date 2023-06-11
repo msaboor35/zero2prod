@@ -1,5 +1,5 @@
-use actix_web::{App, HttpServer, HttpResponse, Responder, web, get};
 use actix_web::dev::Server;
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 
 #[get("/health_check")]
 async fn health_check() -> impl Responder {
