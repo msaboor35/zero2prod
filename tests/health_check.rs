@@ -8,4 +8,6 @@ async fn health_check_test() {
 
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::OK);
+    let body = test::read_body(resp).await;
+    assert_eq!(body.len(), 0);
 }
