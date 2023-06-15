@@ -32,9 +32,18 @@ async fn test_subscribe_returns_400_for_incomplete_form() {
     let app = test::init_service(App::new().configure(configure_app)).await;
 
     let test_cases = vec![
-        ([("email", None), ("name", Some("Testing tester"))], "missing email"),
-        ([("email", Some("test@testdomain.com")), ("name", None)], "missing name"),
-        ([("email", None), ("name", None)], "missing email and password"),
+        (
+            [("email", None), ("name", Some("Testing tester"))],
+            "missing email",
+        ),
+        (
+            [("email", Some("test@testdomain.com")), ("name", None)],
+            "missing name",
+        ),
+        (
+            [("email", None), ("name", None)],
+            "missing email and password",
+        ),
     ];
 
     for (test_case, error_message) in test_cases {
