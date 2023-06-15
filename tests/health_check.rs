@@ -17,9 +17,7 @@ async fn health_check_test() {
 #[actix_web::test]
 async fn test_subscribe_returns_200_for_valid_form() {
     let app = test::init_service(App::new().configure(configure_app)).await;
-    let form = [("email", "test@testdomain.com"), ("name", "Testing tester")];
-    let form = serde_urlencoded::to_string(form)
-            .expect("Failed to encode the test case into a query string");
+    let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
     let req = test::TestRequest::post()
         .uri("/subscriptions")
         .set_form(form)
@@ -34,21 +32,17 @@ async fn test_subscribe_returns_400_for_incomplete_form() {
     let app = test::init_service(App::new().configure(configure_app)).await;
 
     let test_cases = vec![
-        ([None, Some(("name", "Testing tester"))], "missing email"),
-        (
-            [Some(("email", "test@testdomain.com")), None],
-            "missing name",
-        ),
-        ([None, None], "missing email and password"),
+        ([("email", None), ("name", Some("Testing tester"))], "missing email"),
+        ([("email", Some("test@testdomain.com")), ("name", None)], "missing name"),
+        ([("email", None), ("name", None)], "missing email and password"),
     ];
 
     for (test_case, error_message) in test_cases {
-        let form = serde_urlencoded::to_string(test_case)
-            .expect("Failed to encode the test case into a query string");
+        let form = test_case.as_slice();
 
         let req = test::TestRequest::post()
             .uri("/subscriptions")
-            .set_form(&form)
+            .set_form(form)
             .to_request();
 
         let resp = test::call_service(&app, req).await;
