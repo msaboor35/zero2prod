@@ -10,9 +10,9 @@ pub fn configure_app(cfg: &mut web::ServiceConfig) {
     cfg.service(health_check).service(subscribe);
 }
 
-pub fn run() -> Result<Server, std::io::Error> {
+pub fn run(port: u16) -> Result<Server, std::io::Error> {
     let server = HttpServer::new(|| App::new().configure(configure_app))
-        .bind(("127.0.0.1", 8080))?
+        .bind(("127.0.0.1", port))?
         .run();
 
     Ok(server)
