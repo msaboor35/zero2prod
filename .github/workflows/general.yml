@@ -87,7 +87,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - uses: Swatinem/rust-cache@v2
       - name: Install sqlx-cli
         run: cargo install sqlx-cli
       - name: Install psql
