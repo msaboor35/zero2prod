@@ -1,4 +1,4 @@
-use zero2prod::{run, configuration::get_configuration};
+use zero2prod::{configuration::get_configuration, run};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
