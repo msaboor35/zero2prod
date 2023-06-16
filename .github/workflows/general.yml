@@ -89,6 +89,8 @@ jobs:
         run: cargo install sqlx-cli
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
       - name: Run migrations
         run: SKIP_DOCKER=true ./scripts/init_db.sh
       - name: Generate code coverage
