@@ -17,4 +17,5 @@ name = "zero2prod"
 actix-web = "4.3.1"
 serde = { version = "1.0.164", features = ["derive"] }
 serde_urlencoded = "0.7.1"
+sqlx = { version = "0.6.3", features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate"] }
 tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
