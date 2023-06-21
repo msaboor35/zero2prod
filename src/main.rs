@@ -1,13 +1,10 @@
-use sqlx::{Connection, PgConnection};
-use zero2prod::{configuration::get_configuration, run};
+use zero2prod::{configuration::get_configuration, run, startup::init_db};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init();
     let config = get_configuration().expect("Failed to read configuration");
+    init_db().await;
     println!("{:?}", config);
-    let connection = PgConnection::connect(&config.db.connection_string())
-        .await
-        .expect("Failed to connect to Postgres");
-    run(config.port, connection)?.await
+    run(config.port)?.await
 }
