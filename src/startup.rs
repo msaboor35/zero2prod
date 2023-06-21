@@ -4,7 +4,7 @@ use actix_web::web;
 use sqlx::PgPool;
 use std::sync::OnceLock;
 
-static DB_POOL: OnceLock<web::Data<PgPool>> = OnceLock::new();
+pub static DB_POOL: OnceLock<web::Data<PgPool>> = OnceLock::new();
 
 pub async fn init_db() {
     let config = get_configuration().expect("Failed to read configuration");

@@ -1,17 +1,14 @@
 use actix_web::{http::StatusCode, test, App};
-use sqlx::{Connection, PgConnection};
-use zero2prod::{configuration::get_configuration, configure_app};
+use zero2prod::startup::{configure_app, init_db};
 
 use std::vec;
 
 #[actix_web::test]
 async fn test_subscribe_returns_200_for_valid_form() {
+    init_db().await;
+
+    let conn = zero2prod::startup::DB_POOL.get().unwrap().clone();
     let app = test::init_service(App::new().configure(configure_app)).await;
-    let config = get_configuration().expect("Failed to read configuration");
-    let connection_string = config.db.connection_string();
-    let mut db_conn = PgConnection::connect(&connection_string)
-        .await
-        .expect("Failed to connect to Postgres");
 
     let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
     let req = test::TestRequest::post()
@@ -23,7 +20,7 @@ async fn test_subscribe_returns_200_for_valid_form() {
     assert_eq!(resp.status(), StatusCode::OK);
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions")
-        .fetch_one(&mut db_conn)
+        .fetch_one(conn.get_ref())
         .await
         .expect("Failed to fetch saved subscription");
     assert_eq!(saved.email, "test@testdomain.com");
@@ -32,6 +29,8 @@ async fn test_subscribe_returns_200_for_valid_form() {
 
 #[actix_web::test]
 async fn test_subscribe_returns_400_for_incomplete_form() {
+    init_db().await;
+
     let app = test::init_service(App::new().configure(configure_app)).await;
 
     let test_cases = vec![
@@ -66,3 +65,5 @@ async fn test_subscribe_returns_400_for_incomplete_form() {
         );
     }
 }
+
+// TODO: Add test for duplicate email
