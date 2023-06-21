@@ -1,11 +1,11 @@
 use actix_web::{http::StatusCode, test, App};
-use zero2prod::startup::{configure_app, init_db};
+use zero2prod::startup::{configure_app, init_test_db};
 
 use std::vec;
 
 #[actix_web::test]
 async fn test_subscribe_returns_200_for_valid_form() {
-    init_db().await;
+    init_test_db().await;
 
     let conn = zero2prod::startup::DB_POOL.get().unwrap().clone();
     let app = test::init_service(App::new().configure(configure_app)).await;
@@ -29,7 +29,7 @@ async fn test_subscribe_returns_200_for_valid_form() {
 
 #[actix_web::test]
 async fn test_subscribe_returns_400_for_incomplete_form() {
-    init_db().await;
+    init_test_db().await;
 
     let app = test::init_service(App::new().configure(configure_app)).await;
 

@@ -1,9 +1,9 @@
 use actix_web::{http::StatusCode, test, App};
-use zero2prod::startup::{configure_app, init_db};
+use zero2prod::startup::{configure_app, init_test_db};
 
 #[actix_web::test]
 async fn health_check_test() {
-    init_db().await;
+    init_test_db().await;
     let app = test::init_service(App::new().configure(configure_app)).await;
     let req = test::TestRequest::get().uri("/health_check").to_request();
 
