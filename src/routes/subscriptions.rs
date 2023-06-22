@@ -13,7 +13,8 @@ async fn subscribe(
     form: web::Form<SubscriptionForm>,
     connection: web::Data<PgPool>,
 ) -> impl Responder {
-    println!("Received subscription request: {:?}", &form);
+    log::info!("Received subscription request");
+    log::info!("Adding '{}' '{}' to database", form.email, form.name);
     match sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name)
@@ -26,9 +27,12 @@ async fn subscribe(
     .execute(connection.get_ref())
     .await
     {
-        Ok(_) => HttpResponse::Ok(),
+        Ok(_) => {
+            log::info!("Saved new subscriber details.");
+            HttpResponse::Ok()
+        }
         Err(e) => {
-            println!("Failed to execute query: {}", e);
+            log::error!("Failed to execute query: {:?}", e);
             HttpResponse::InternalServerError()
         }
     }
