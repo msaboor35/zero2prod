@@ -14,8 +14,8 @@ struct SubscriptionForm {
     skip(form, connection),
     fields(
         request_id = %Uuid::new_v4(),
-        email = %form.email,
-        name = %form.name
+        subscriber_email = %form.email,
+        subscriber_name = %form.name,
     )
 )]
 #[post("/subscriptions")]
