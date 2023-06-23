@@ -11,8 +11,16 @@ static TRACING: Once = Once::new();
 
 fn init_tracing() {
     TRACING.call_once(|| {
-        let subscriber = get_subscriber("test".into(), "debug".into(), std::io::sink);
-        init_subscriber(subscriber);
+        let subscriber_name = "test".into();
+        let log_level = "debug".into();
+
+        if std::env::var("TEST_LOG").is_ok() {
+            let subscriber = get_subscriber(subscriber_name, log_level, std::io::stdout);
+            init_subscriber(subscriber);
+        } else {
+            let subscriber = get_subscriber(subscriber_name, log_level, std::io::sink);
+            init_subscriber(subscriber);
+        }
     });
 }
 
