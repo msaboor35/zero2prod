@@ -1,7 +1,6 @@
 use zero2prod::{
     configuration::get_configuration,
-    run,
-    startup::init_db,
+    startup::{init_db, run},
     telemetry::{get_subscriber, init_subscriber},
 };
 
