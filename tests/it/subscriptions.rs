@@ -1,5 +1,6 @@
 use crate::init::init;
 use actix_web::{http::StatusCode, test, App};
+use tracing_actix_web::TracingLogger;
 use zero2prod::startup::configure_app;
 
 use std::vec;
@@ -9,7 +10,12 @@ async fn test_subscribe_returns_200_for_valid_form() {
     init().await;
 
     let conn = zero2prod::startup::DB_POOL.get().unwrap().clone();
-    let app = test::init_service(App::new().configure(configure_app)).await;
+    let app = test::init_service(
+        App::new()
+            .wrap(TracingLogger::default())
+            .configure(configure_app),
+    )
+    .await;
 
     let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
     let req = test::TestRequest::post()
@@ -32,7 +38,12 @@ async fn test_subscribe_returns_200_for_valid_form() {
 async fn test_subscribe_returns_400_for_incomplete_form() {
     init().await;
 
-    let app = test::init_service(App::new().configure(configure_app)).await;
+    let app = test::init_service(
+        App::new()
+            .wrap(TracingLogger::default())
+            .configure(configure_app),
+    )
+    .await;
 
     let test_cases = vec![
         (
