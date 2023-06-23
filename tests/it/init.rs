@@ -1,4 +1,5 @@
 use actix_web::web;
+use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::sync::Once;
 use zero2prod::{
@@ -30,7 +31,7 @@ async fn init_test_db() {
 
     let mut config = get_configuration().expect("Failed to read configuration");
     config.db.name = Uuid::new_v4().to_string();
-    let mut conn = PgConnection::connect(&config.db.connection_string_without_db())
+    let mut conn = PgConnection::connect(config.db.connection_string_without_db().expose_secret())
         .await
         .expect("Failed to connect to Postgres");
 
@@ -38,7 +39,7 @@ async fn init_test_db() {
         .await
         .expect("Failed to create database.");
 
-    let pool = PgPool::connect(&config.db.connection_string())
+    let pool = PgPool::connect(config.db.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres");
     sqlx::migrate!("./migrations")

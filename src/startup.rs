@@ -4,6 +4,7 @@ use actix_web::dev::Server;
 use actix_web::middleware::Logger;
 use actix_web::web;
 use actix_web::{App, HttpServer};
+use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::sync::OnceLock;
 
@@ -20,7 +21,7 @@ pub fn run(port: u16) -> Result<Server, std::io::Error> {
 
 pub async fn init_db() {
     let config = get_configuration().expect("Failed to read configuration");
-    let pool = PgPool::connect(&config.db.connection_string())
+    let pool = PgPool::connect(config.db.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres");
     let pool = web::Data::new(pool);
