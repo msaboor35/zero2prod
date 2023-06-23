@@ -1,9 +1,10 @@
+use crate::init::init;
 use actix_web::{http::StatusCode, test, App};
-use zero2prod::startup::{configure_app, init_test_db};
+use zero2prod::startup::configure_app;
 
 #[actix_web::test]
 async fn health_check_test() {
-    init_test_db().await;
+    init().await;
     let app = test::init_service(App::new().configure(configure_app)).await;
     let req = test::TestRequest::get().uri("/health_check").to_request();
 

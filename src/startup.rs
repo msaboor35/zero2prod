@@ -18,28 +18,11 @@ pub fn run(port: u16) -> Result<Server, std::io::Error> {
     Ok(server)
 }
 
-pub async fn init_test_db() {
-    use sqlx::{Connection, Executor, PgConnection};
-    use uuid::Uuid;
-
-    let mut config = get_configuration().expect("Failed to read configuration");
-    config.db.name = Uuid::new_v4().to_string();
-    let mut conn = PgConnection::connect(&config.db.connection_string_without_db())
-        .await
-        .expect("Failed to connect to Postgres");
-
-    conn.execute(format!(r#"CREATE DATABASE "{}";"#, config.db.name).as_str())
-        .await
-        .expect("Failed to create database.");
-
+pub async fn init_db() {
+    let config = get_configuration().expect("Failed to read configuration");
     let pool = PgPool::connect(&config.db.connection_string())
         .await
         .expect("Failed to connect to Postgres");
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .expect("Failed to migrate database");
-
     let pool = web::Data::new(pool);
     _ = DB_POOL.set(pool);
 }
