@@ -14,6 +14,7 @@ path = "src/main.rs"
 name = "zero2prod"
 
 [dependencies]
+actix-http = "3.3.1"
 actix-web = "4.3.1"
 config = "0.13.3"
 secrecy = { version = "0.8.0", features = ["serde"] }

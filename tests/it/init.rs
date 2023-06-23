@@ -1,7 +1,11 @@
-use actix_web::web;
+use actix_http::Request;
+use actix_web::dev::{Service, ServiceResponse};
+use actix_web::{body::BoxBody, test, web, App};
 use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::sync::Once;
+use tracing_actix_web::{StreamSpan, TracingLogger};
+use zero2prod::startup::configure_app;
 use zero2prod::{
     configuration::get_configuration,
     startup::DB_POOL,
@@ -9,6 +13,19 @@ use zero2prod::{
 };
 
 static TRACING: Once = Once::new();
+
+pub async fn init_app(
+) -> impl Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error>
+{
+    init().await;
+
+    test::init_service(
+        App::new()
+            .wrap(TracingLogger::default())
+            .configure(configure_app),
+    )
+    .await
+}
 
 fn init_tracing() {
     TRACING.call_once(|| {
@@ -51,7 +68,7 @@ async fn init_test_db() {
     _ = DB_POOL.set(pool);
 }
 
-pub async fn init() {
+async fn init() {
     init_tracing();
     init_test_db().await;
 }
