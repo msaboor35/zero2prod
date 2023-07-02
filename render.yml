@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: api
+    runtime: docker
+    region: frankfurt
+    plan: free
+    healthCheckPath: /health_check
+    envVars:
+      - key: APP__DB__NAME
+        fromDatabase:
+          name: prod
+          property: database
+      - key: APP__DB__HOST
+        fromDatabase:
+          name: prod
+          property: host
+      - key: APP__DB__PORT
+        fromDatabase:
+          name: prod
+          property: port
+      - key: APP__DB__USER
+        fromDatabase:
+          name: prod
+          property: user
+      - key: APP__DB__PASSWORD
+        fromDatabase:
+          name: prod
+          property: password
+
+databases:
+  - name: prod
+    databaseName: newsletter
+    plan: free
+    region: frankfurt
