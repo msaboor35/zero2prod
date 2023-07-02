@@ -1,7 +1,6 @@
 use actix_http::Request;
 use actix_web::dev::{Service, ServiceResponse};
 use actix_web::{body::BoxBody, test, web, App};
-use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::sync::Once;
 use tracing_actix_web::{StreamSpan, TracingLogger};
@@ -48,7 +47,7 @@ async fn init_test_db() {
 
     let mut config = get_configuration().expect("Failed to read configuration");
     config.db.name = Uuid::new_v4().to_string();
-    let mut conn = PgConnection::connect(config.db.connection_string_without_db().expose_secret())
+    let mut conn = PgConnection::connect_with(&config.db.without_db())
         .await
         .expect("Failed to connect to Postgres");
 
@@ -56,7 +55,7 @@ async fn init_test_db() {
         .await
         .expect("Failed to create database.");
 
-    let pool = PgPool::connect(config.db.connection_string().expose_secret())
+    let pool = PgPool::connect_with(config.db.with_db())
         .await
         .expect("Failed to connect to Postgres");
     sqlx::migrate!("./migrations")

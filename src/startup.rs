@@ -3,7 +3,6 @@ use crate::routes::{health_check, subscribe};
 use actix_web::dev::Server;
 use actix_web::web;
 use actix_web::{App, HttpServer};
-use secrecy::ExposeSecret;
 use sqlx::PgPool;
 use std::sync::OnceLock;
 use tracing_actix_web::TracingLogger;
@@ -24,8 +23,7 @@ pub fn run(config: &ApplicationSettings) -> Result<Server, std::io::Error> {
 
 pub async fn init_db() {
     let config = get_configuration().expect("Failed to read configuration");
-    let pool = PgPool::connect_lazy(config.db.connection_string().expose_secret())
-        .expect("Failed to connect to Postgres");
+    let pool = PgPool::connect_lazy_with(config.db.with_db());
     let pool = web::Data::new(pool);
     _ = DB_POOL.set(pool);
 }

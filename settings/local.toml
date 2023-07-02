@@ -1,2 +1,5 @@
 [app]
 host = "127.0.0.1"
+
+[db]
+require_ssl = false
