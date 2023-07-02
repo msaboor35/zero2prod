@@ -86,7 +86,11 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
         .add_source(
             config::File::from(configuration_directory.join(environment.as_str())).required(true),
         )
-        .add_source(config::Environment::with_prefix("app").prefix_separator("__").separator("__"))
+        .add_source(
+            config::Environment::with_prefix("app")
+                .prefix_separator("__")
+                .separator("__"),
+        )
         .build()
         .unwrap();
 
