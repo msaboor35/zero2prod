@@ -18,7 +18,7 @@ services:
         fromDatabase:
           name: prod
           property: port
-      - key: APP__DB__USER
+      - key: APP__DB__USERNAME
         fromDatabase:
           name: prod
           property: user
