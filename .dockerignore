@@ -1,0 +1,10 @@
+target/
+tests/
+scripts/
+migrations/
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.github
+.env
