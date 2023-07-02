@@ -12,5 +12,5 @@ async fn main() -> std::io::Result<()> {
     let config = get_configuration().expect("Failed to read configuration");
     init_db().await;
     println!("{:?}", config);
-    run(config.port)?.await
+    run(&config.app)?.await
 }

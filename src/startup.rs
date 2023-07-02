@@ -1,4 +1,4 @@
-use crate::configuration::get_configuration;
+use crate::configuration::{get_configuration, ApplicationSettings};
 use crate::routes::{health_check, subscribe};
 use actix_web::dev::Server;
 use actix_web::web;
@@ -10,13 +10,13 @@ use tracing_actix_web::TracingLogger;
 
 pub static DB_POOL: OnceLock<web::Data<PgPool>> = OnceLock::new();
 
-pub fn run(port: u16) -> Result<Server, std::io::Error> {
+pub fn run(config: &ApplicationSettings) -> Result<Server, std::io::Error> {
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
             .configure(configure_app)
     })
-    .bind(("127.0.0.1", port))?
+    .bind((config.host.clone(), config.port))?
     .run();
 
     Ok(server)
