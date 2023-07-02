@@ -24,8 +24,7 @@ pub fn run(port: u16) -> Result<Server, std::io::Error> {
 
 pub async fn init_db() {
     let config = get_configuration().expect("Failed to read configuration");
-    let pool = PgPool::connect(config.db.connection_string().expose_secret())
-        .await
+    let pool = PgPool::connect_lazy(config.db.connection_string().expose_secret())
         .expect("Failed to connect to Postgres");
     let pool = web::Data::new(pool);
     _ = DB_POOL.set(pool);
