@@ -1,6 +1,6 @@
 use zero2prod::{
     configuration::get_configuration,
-    startup::{init_db, run},
+    startup::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -10,7 +10,10 @@ async fn main() -> std::io::Result<()> {
     init_subscriber(subscriber);
 
     let config = get_configuration().expect("Failed to read configuration");
-    init_db().await;
-    println!("{:?}", config);
-    run(&config.app)?.await
+    let app = Application::new(config).await?;
+    println!("{:?}", app.get_config());
+
+    app.run_until_stopped().await?;
+
+    Ok(())
 }
