@@ -5,13 +5,13 @@ use sqlx::{
     ConnectOptions,
 };
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct Settings {
     pub db: DatabaseSettings,
     pub app: ApplicationSettings,
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct ApplicationSettings {
     pub host: String,
     #[serde(deserialize_with = "deserialize_number_from_string")]
@@ -44,7 +44,7 @@ impl TryFrom<String> for Environment {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: Secret<String>,
