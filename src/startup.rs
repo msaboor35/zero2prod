@@ -32,7 +32,7 @@ pub fn init_db(config: &DatabaseSettings) -> PgPool {
     PgPool::connect_lazy_with(config.with_db())
 }
 
-pub fn run(config: &ApplicationSettings, pool: PgPool) -> Result<Server, std::io::Error> {
+fn run(config: &ApplicationSettings, pool: PgPool) -> Result<Server, std::io::Error> {
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())

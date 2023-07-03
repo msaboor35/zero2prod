@@ -50,7 +50,7 @@ impl TestApp {
     }
 }
 
-pub fn init_tracing() {
+fn init_tracing() {
     TRACING.call_once(|| {
         let subscriber_name = "test".into();
         let log_level = "debug".into();
@@ -65,7 +65,7 @@ pub fn init_tracing() {
     });
 }
 
-pub async fn init_test_db(config: &DatabaseSettings) {
+async fn init_test_db(config: &DatabaseSettings) {
     use sqlx::{Connection, Executor, PgConnection};
 
     let mut conn = PgConnection::connect_with(&config.without_db())
