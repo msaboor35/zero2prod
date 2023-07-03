@@ -31,6 +31,7 @@ impl TestApp {
         TestApp { db_pool }
     }
 
+    // TODO: this should be called only once in the new function and the return value should be stored in a field
     pub async fn get_server(
         &self,
     ) -> impl Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error>
