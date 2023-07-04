@@ -22,8 +22,10 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli
+      - name: cargo-install
+        uses: baptiste0928/cargo-install@v2.1.0
+        with:
+          crate: sqlx-cli
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Run migrations
@@ -60,8 +62,10 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli
+      - name: cargo-install
+        uses: baptiste0928/cargo-install@v2.1.0
+        with:
+          crate: sqlx-cli
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Run migrations
@@ -85,8 +89,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install sqlx-cli
-        run: cargo install sqlx-cli
+      - name: cargo-install
+        uses: baptiste0928/cargo-install@v2.1.0
+        with:
+          crate: sqlx-tarpaulin
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Install tarpaulin
