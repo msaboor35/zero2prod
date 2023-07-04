@@ -92,7 +92,7 @@ jobs:
       - name: cargo-install
         uses: baptiste0928/cargo-install@v2.1.0
         with:
-          crate: sqlx-tarpaulin
+          crate: cargo-tarpaulin
       - name: Install psql
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Install tarpaulin
