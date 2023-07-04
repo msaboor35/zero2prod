@@ -62,15 +62,13 @@ impl DatabaseSettings {
         } else {
             PgSslMode::Prefer
         };
-        let mut options = PgConnectOptions::new()
+        PgConnectOptions::new()
             .host(&self.host)
             .port(self.port)
             .username(&self.username)
             .password(self.password.expose_secret())
-            .ssl_mode(ssl_mode);
-
-        options.log_statements(tracing::log::LevelFilter::Trace);
-        options
+            .ssl_mode(ssl_mode)
+            .log_statements(tracing::log::LevelFilter::Trace)
     }
 
     pub fn with_db(&self) -> PgConnectOptions {
