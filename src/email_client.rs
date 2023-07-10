@@ -60,7 +60,8 @@ impl EmailClient {
             )
             .json(&request_body)
             .send()
-            .await?;
+            .await?
+            .error_for_status()?;
         Ok(())
     }
 }
@@ -90,13 +91,14 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
+    use claims::{assert_err, assert_ok};
     use fake::{
         faker::{internet::en::SafeEmail, lorem::en::Sentence},
         Fake, Faker,
     };
     use secrecy::{ExposeSecret, Secret};
     use wiremock::{
-        matchers::{basic_auth, header, method, path},
+        matchers::{any, basic_auth, header, method, path},
         Mock, MockServer, ResponseTemplate,
     };
 
@@ -177,8 +179,40 @@ mod tests {
         let subject: String = Sentence(1..2).fake();
         let content: String = Sentence(1..2).fake();
 
-        let _ = email_client
+        let result = email_client
             .send_email(subscriber_email, &subject, &content, &content)
             .await;
+
+        assert_ok!(result);
+    }
+
+    #[tokio::test]
+    async fn send_email_fails_if_server_returns_500() {
+        let mock_server = MockServer::start().await;
+        let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
+        let api_key = Secret::new(Faker.fake::<String>());
+        let api_secret = Secret::new(Faker.fake::<String>());
+        let email_client = EmailClient::new(
+            mock_server.uri(),
+            sender,
+            api_key.clone(),
+            api_secret.clone(),
+        );
+
+        Mock::given(any())
+            .respond_with(ResponseTemplate::new(500))
+            .expect(1)
+            .mount(&mock_server)
+            .await;
+
+        let subscriber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
+        let subject: String = Sentence(1..2).fake();
+        let content: String = Sentence(1..2).fake();
+
+        let result = email_client
+            .send_email(subscriber_email, &subject, &content, &content)
+            .await;
+
+        assert_err!(result);
     }
 }
