@@ -1,7 +1,16 @@
 use crate::init::TestApp;
+use actix_http::Request;
 use actix_web::{http::StatusCode, test};
+use serde::Serialize;
 
 use std::vec;
+
+fn post_subscription_request(form: impl Serialize) -> Request {
+    test::TestRequest::post()
+        .uri("/subscriptions")
+        .set_form(form)
+        .to_request()
+}
 
 #[actix_web::test]
 async fn test_subscribe_returns_200_for_valid_form() {
@@ -10,10 +19,7 @@ async fn test_subscribe_returns_200_for_valid_form() {
 
     let conn = app.get_db_conn();
     let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
-    let req = test::TestRequest::post()
-        .uri("/subscriptions")
-        .set_form(form)
-        .to_request();
+    let req = post_subscription_request(form);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), StatusCode::OK);
@@ -49,10 +55,7 @@ async fn test_subscribe_returns_400_for_incomplete_form() {
     for (test_case, error_message) in test_cases {
         let form = test_case.as_slice();
 
-        let req = test::TestRequest::post()
-            .uri("/subscriptions")
-            .set_form(form)
-            .to_request();
+        let req = post_subscription_request(form);
 
         let resp = test::call_service(&server, req).await;
         assert_eq!(
@@ -81,10 +84,7 @@ async fn test_subscribe_returns_400_when_data_is_missing() {
     for (test_case, error_message) in test_cases {
         let form = test_case.as_slice();
 
-        let req = test::TestRequest::post()
-            .uri("/subscriptions")
-            .set_form(form)
-            .to_request();
+        let req = post_subscription_request(form);
 
         let resp = test::call_service(&server, req).await;
         assert_eq!(
