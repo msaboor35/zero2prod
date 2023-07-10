@@ -39,14 +39,14 @@ impl EmailClient {
         let request_body = SendEmailRequest {
             messages: vec![SendEmailRequestMessage {
                 from: SendEmailRequestEmail {
-                    email: self.sender.as_ref().to_owned(),
+                    email: self.sender.as_ref(),
                 },
                 to: vec![SendEmailRequestEmail {
-                    email: recipient.as_ref().to_owned(),
+                    email: recipient.as_ref(),
                 }],
-                subject: subject.to_owned(),
-                text_part: text_content.to_owned(),
-                html_part: html_content.to_owned(),
+                subject,
+                text_part: text_content,
+                html_part: html_content,
             }],
         };
 
@@ -65,27 +65,27 @@ impl EmailClient {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
-struct SendEmailRequestEmail {
-    email: String,
+struct SendEmailRequestEmail<'a> {
+    email: &'a str,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
-struct SendEmailRequestMessage {
-    from: SendEmailRequestEmail,
-    to: Vec<SendEmailRequestEmail>,
-    subject: String,
-    text_part: String,
+struct SendEmailRequestMessage<'a> {
+    from: SendEmailRequestEmail<'a>,
+    to: Vec<SendEmailRequestEmail<'a>>,
+    subject: &'a str,
+    text_part: &'a str,
     #[serde(rename = "HTMLPart")]
-    html_part: String,
+    html_part: &'a str,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
-struct SendEmailRequest {
-    messages: Vec<SendEmailRequestMessage>,
+struct SendEmailRequest<'a> {
+    messages: Vec<SendEmailRequestMessage<'a>>,
 }
 
 #[cfg(test)]
