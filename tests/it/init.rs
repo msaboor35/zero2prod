@@ -1,5 +1,5 @@
 use actix_http::Request;
-use actix_web::dev::{Service, ServiceResponse};
+use actix_web::dev::{Service, ServiceFactory, ServiceResponse};
 use actix_web::web::Data;
 use actix_web::{body::BoxBody, test, App};
 use sqlx::PgPool;
@@ -7,8 +7,8 @@ use std::sync::Once;
 use tracing_actix_web::{StreamSpan, TracingLogger};
 use uuid::Uuid;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
-use zero2prod::email_client::EmailClient;
-use zero2prod::startup::{configure_app, init_db};
+use zero2prod::email_client::{self, EmailClient};
+use zero2prod::startup::{configure_app, init_db, init_email_client, new_app};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 static TRACING: Once = Once::new();
@@ -30,18 +30,7 @@ impl TestApp {
         init_test_db(&config.db).await;
 
         let db_pool = init_db(&config.db);
-
-        let sender_email = config
-            .email_client
-            .sender()
-            .expect("Invalid sender email address");
-        let email_client = EmailClient::new(
-            config.email_client.base_url.clone(),
-            sender_email,
-            config.email_client.api_key.clone(),
-            config.email_client.api_secret.clone(),
-            config.email_client.timeout(),
-        );
+        let email_client = init_email_client(&config.email_client);
 
         TestApp {
             db_pool,
@@ -57,14 +46,7 @@ impl TestApp {
     {
         let db_pool = Data::new(self.db_pool.clone());
         let email_client = Data::new(self.email_client.clone());
-        test::init_service(
-            App::new()
-                .wrap(TracingLogger::default())
-                .configure(configure_app)
-                .app_data(db_pool.clone())
-                .app_data(email_client.clone()),
-        )
-        .await
+        test::init_service(new_app(db_pool, email_client)).await
     }
 
     pub fn get_db_conn(&self) -> &PgPool {
