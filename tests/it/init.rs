@@ -1,14 +1,14 @@
 use actix_http::Request;
-use actix_web::dev::{Service, ServiceFactory, ServiceResponse};
+use actix_web::dev::{Service, ServiceResponse};
 use actix_web::web::Data;
-use actix_web::{body::BoxBody, test, App};
+use actix_web::{body::BoxBody, test};
 use sqlx::PgPool;
 use std::sync::Once;
-use tracing_actix_web::{StreamSpan, TracingLogger};
+use tracing_actix_web::StreamSpan;
 use uuid::Uuid;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
-use zero2prod::email_client::{self, EmailClient};
-use zero2prod::startup::{configure_app, init_db, init_email_client, new_app};
+use zero2prod::email_client::EmailClient;
+use zero2prod::startup::{init_db, init_email_client, new_app};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 static TRACING: Once = Once::new();
