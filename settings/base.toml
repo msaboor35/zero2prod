@@ -11,5 +11,4 @@ password = "postgres"
 [email_client]
 base_url = "localhost"
 sender_email = "test@gmail.com"
-api_key = "mailjet-api-key"
-api_secret = "mailjet-api-secret"
+timeout_ms = 10000

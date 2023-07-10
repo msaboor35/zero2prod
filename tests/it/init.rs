@@ -40,6 +40,7 @@ impl TestApp {
             sender_email,
             config.email_client.api_key.clone(),
             config.email_client.api_secret.clone(),
+            config.email_client.timeout(),
         );
 
         TestApp {

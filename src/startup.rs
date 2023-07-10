@@ -24,6 +24,7 @@ impl Application {
             sender_email,
             config.email_client.api_key.clone(),
             config.email_client.api_secret.clone(),
+            config.email_client.timeout(),
         );
         let server = run(&config.app, db_pool, email_client).expect("Failed to bind address");
         let app = Application { config, server };

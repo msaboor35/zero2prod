@@ -17,13 +17,11 @@ impl EmailClient {
         sender: SubscriberEmail,
         api_key: Secret<String>,
         api_secret: Secret<String>,
+        timeout: std::time::Duration,
     ) -> Self {
         Self {
             sender,
-            http_client: Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
-                .build()
-                .unwrap(),
+            http_client: Client::builder().timeout(timeout).build().unwrap(),
             base_url,
             api_key,
             api_secret,
@@ -228,6 +226,12 @@ mod tests {
     fn email_client(base_url: String) -> EmailClient {
         let api_key = Secret::new(Faker.fake::<String>());
         let api_secret = Secret::new(Faker.fake::<String>());
-        EmailClient::new(base_url, email(), api_key, api_secret)
+        EmailClient::new(
+            base_url,
+            email(),
+            api_key,
+            api_secret,
+            std::time::Duration::from_millis(200),
+        )
     }
 }
