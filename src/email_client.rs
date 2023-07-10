@@ -78,6 +78,7 @@ struct SendEmailRequestMessage {
     to: Vec<SendEmailRequestEmail>,
     subject: String,
     text_part: String,
+    #[serde(rename = "HTMLPart")]
     html_part: String,
 }
 
