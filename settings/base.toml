@@ -7,3 +7,9 @@ host = "localhost"
 port = 5432
 username = "postgres"
 password = "postgres"
+
+[email_client]
+base_url = "localhost"
+sender_email = "test@gmail.com"
+api_key = "mailjet-api-key"
+api_secret = "mailjet-api-secret"

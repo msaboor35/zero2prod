@@ -5,10 +5,13 @@ use sqlx::{
     ConnectOptions,
 };
 
+use crate::domain::subscriber_email::SubscriberEmail;
+
 #[derive(serde::Deserialize, Debug)]
 pub struct Settings {
     pub db: DatabaseSettings,
     pub app: ApplicationSettings,
+    pub email_client: EmailClientSettings,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -73,6 +76,20 @@ impl DatabaseSettings {
 
     pub fn with_db(&self) -> PgConnectOptions {
         self.without_db().database(&self.name)
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct EmailClientSettings {
+    pub base_url: String,
+    pub sender_email: String,
+    pub api_key: Secret<String>,
+    pub api_secret: Secret<String>,
+}
+
+impl EmailClientSettings {
+    pub fn sender(&self) -> Result<SubscriberEmail, String> {
+        SubscriberEmail::parse(self.sender_email.clone())
     }
 }
 

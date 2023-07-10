@@ -7,6 +7,7 @@ use std::sync::Once;
 use tracing_actix_web::{StreamSpan, TracingLogger};
 use uuid::Uuid;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::email_client::EmailClient;
 use zero2prod::startup::{configure_app, init_db};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
@@ -14,6 +15,8 @@ static TRACING: Once = Once::new();
 
 pub struct TestApp {
     db_pool: PgPool,
+    email_client: EmailClient,
+    // server: Box<dyn Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error, Future = Box<dyn Future<Output = Result<ServiceResponse<StreamSpan<BoxBody>>, actix_web::Error>>>>>,
 }
 
 impl TestApp {
@@ -28,19 +31,37 @@ impl TestApp {
 
         let db_pool = init_db(&config.db);
 
-        TestApp { db_pool }
+        let sender_email = config
+            .email_client
+            .sender()
+            .expect("Invalid sender email address");
+        let email_client = EmailClient::new(
+            config.email_client.base_url.clone(),
+            sender_email,
+            config.email_client.api_key.clone(),
+            config.email_client.api_secret.clone(),
+        );
+
+        TestApp {
+            db_pool,
+            email_client,
+        }
     }
 
     // TODO: this should be called only once in the new function and the return value should be stored in a field
+    // FnOnce Maybe?????
     pub async fn get_server(
         &self,
     ) -> impl Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error>
     {
+        let db_pool = Data::new(self.db_pool.clone());
+        let email_client = Data::new(self.email_client.clone());
         test::init_service(
             App::new()
                 .wrap(TracingLogger::default())
                 .configure(configure_app)
-                .app_data(Data::new(self.db_pool.clone())),
+                .app_data(db_pool.clone())
+                .app_data(email_client.clone()),
         )
         .await
     }
