@@ -52,8 +52,7 @@ impl EmailClient {
 
         println!("{}", serde_json::to_string_pretty(&request_body).unwrap());
 
-        self
-            .http_client
+        self.http_client
             .post(url)
             .basic_auth(
                 self.api_key.expose_secret(),
@@ -94,10 +93,58 @@ mod tests {
         faker::{internet::en::SafeEmail, lorem::en::Sentence},
         Fake, Faker,
     };
-    use secrecy::Secret;
-    use wiremock::{matchers::any, Mock, MockServer, ResponseTemplate};
+    use secrecy::{ExposeSecret, Secret};
+    use wiremock::{
+        matchers::{basic_auth, header, method, path},
+        Mock, MockServer, ResponseTemplate,
+    };
 
     use crate::{domain::subscriber_email::SubscriberEmail, email_client::EmailClient};
+
+    struct SendEmailRequestBodyMatcher;
+
+    impl wiremock::Match for SendEmailRequestBodyMatcher {
+        fn matches(&self, request: &wiremock::Request) -> bool {
+            let result: Result<serde_json::Value, _> = serde_json::from_slice(&request.body);
+
+            result
+                .as_ref()
+                .ok()
+                .and_then(|body| {
+                    body.get("Messages")
+                        .and_then(|messages| messages.as_array().filter(|arr| arr.len() == 1))
+                        .and_then(|messages| messages.get(0))
+                        .and_then(|message| {
+                            message
+                                .get("From")
+                                .and_then(|from| from.get("Email"))
+                                .and_then(|from_email| from_email.as_str())
+                                .and_then(|_| {
+                                    message
+                                        .get("To")
+                                        .and_then(|to| to.as_array().filter(|arr| arr.len() == 1))
+                                        .and_then(|to| to.get(0))
+                                        .and_then(|to| to.get("Email"))
+                                        .and_then(|to_email| to_email.as_str())
+                                })
+                                .and_then(|_| {
+                                    message.get("Subject").and_then(|subject| subject.as_str())
+                                })
+                                .and_then(|_| {
+                                    message
+                                        .get("TextPart")
+                                        .and_then(|text_part| text_part.as_str())
+                                })
+                                .and_then(|_| {
+                                    message
+                                        .get("HTMLPart")
+                                        .and_then(|html_part| html_part.as_str())
+                                })
+                        })
+                })
+                .is_some()
+        }
+    }
 
     #[tokio::test]
     async fn send_email_fires_a_request_to_base_url() {
@@ -105,9 +152,21 @@ mod tests {
         let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
         let api_key = Secret::new(Faker.fake::<String>());
         let api_secret = Secret::new(Faker.fake::<String>());
-        let email_client = EmailClient::new(mock_server.uri(), sender, api_key, api_secret);
+        let email_client = EmailClient::new(
+            mock_server.uri(),
+            sender,
+            api_key.clone(),
+            api_secret.clone(),
+        );
 
-        Mock::given(any())
+        Mock::given(header("Content-Type", "application/json"))
+            .and(basic_auth(
+                api_key.expose_secret(),
+                api_secret.expose_secret(),
+            ))
+            .and(path("/v3.1/send"))
+            .and(method("POST"))
+            .and(SendEmailRequestBodyMatcher)
             .respond_with(ResponseTemplate::new(200))
             .expect(1)
             .mount(&mock_server)
