@@ -20,6 +20,13 @@ fn post_subscription_request(form: impl Serialize) -> Request {
 async fn test_subscribe_returns_200_for_valid_form() {
     let app = TestApp::new().await;
     let server = app.get_server().await;
+    let email_server = app.get_email_server();
+
+    Mock::given(path("/v3.1/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(email_server)
+        .await;
 
     let conn = app.get_db_conn();
     let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
