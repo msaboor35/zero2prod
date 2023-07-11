@@ -28,12 +28,30 @@ async fn test_subscribe_returns_200_for_valid_form() {
         .mount(email_server)
         .await;
 
-    let conn = app.get_db_conn();
     let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
     let req = post_subscription_request(form);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), StatusCode::OK);
+}
+
+#[actix_web::test]
+async fn test_subscribe_persists_the_new_subscriber() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+    let email_server = app.get_email_server();
+
+    Mock::given(path("/v3.1/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(email_server)
+        .await;
+
+    let conn = app.get_db_conn();
+    let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
+    let req = post_subscription_request(form);
+
+    test::call_service(&server, req).await;
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions")
         .fetch_one(conn)
