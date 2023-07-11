@@ -9,7 +9,7 @@ use wiremock::{
 
 use std::vec;
 
-fn post_subscription_request(form: impl Serialize) -> Request {
+pub fn post_subscription_request(form: impl Serialize) -> Request {
     test::TestRequest::post()
         .uri("/subscriptions")
         .set_form(form)

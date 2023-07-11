@@ -8,6 +8,9 @@ use actix_web::{App, HttpServer};
 use sqlx::PgPool;
 use tracing_actix_web::{StreamSpan, TracingLogger};
 
+#[derive(Clone)]
+pub struct ApplicationBaseUrl(pub String);
+
 pub struct Application {
     config: Settings,
     server: Server,
@@ -49,6 +52,7 @@ pub fn init_email_client(config: &EmailClientSettings) -> EmailClient {
 pub fn new_app(
     pool: Data<PgPool>,
     email_client: Data<EmailClient>,
+    base_url: Data<ApplicationBaseUrl>,
 ) -> App<
     impl ServiceFactory<
         actix_web::dev::ServiceRequest,
@@ -63,6 +67,7 @@ pub fn new_app(
         .configure(configure_app)
         .app_data(pool)
         .app_data(email_client)
+        .app_data(base_url)
 }
 
 fn run(
@@ -72,9 +77,11 @@ fn run(
 ) -> Result<Server, std::io::Error> {
     let pool = Data::new(pool);
     let email_client = Data::new(email_client);
-    let server = HttpServer::new(move || new_app(pool.clone(), email_client.clone()))
-        .bind((config.host.clone(), config.port))?
-        .run();
+    let base_url = Data::new(ApplicationBaseUrl(config.base_url.clone()));
+    let server =
+        HttpServer::new(move || new_app(pool.clone(), email_client.clone(), base_url.clone()))
+            .bind((config.host.clone(), config.port))?
+            .run();
 
     Ok(server)
 }

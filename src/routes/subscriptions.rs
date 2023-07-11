@@ -26,7 +26,7 @@ impl TryFrom<SubscriptionForm> for Subscriber {
 #[allow(clippy::async_yields_async)]
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form, connection, email_client),
+    skip(form, connection, email_client, base_url),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name,
@@ -37,6 +37,7 @@ async fn subscribe(
     form: web::Form<SubscriptionForm>,
     connection: web::Data<PgPool>,
     email_client: web::Data<crate::email_client::EmailClient>,
+    base_url: web::Data<crate::startup::ApplicationBaseUrl>,
 ) -> impl Responder {
     let subscriber = match form.0.try_into() {
         Ok(subscriber) => subscriber,
@@ -47,7 +48,7 @@ async fn subscribe(
         return HttpResponse::InternalServerError();
     }
 
-    if send_confirmation_email(&email_client, subscriber)
+    if send_confirmation_email(&email_client, subscriber, &base_url.0)
         .await
         .is_err()
     {
@@ -64,11 +65,12 @@ async fn subscribe(
 async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: Subscriber,
+    base_url: &str,
 ) -> Result<(), reqwest::Error> {
     let confirmation_link = format!(
-        "{}/subscriptions/confirm?subscription_token={}",
-        "http://localhost:8080", // TODO: get this from the configuration
-        "subscription_token",    // TODO: generate a unique token
+        "{}/subscriptions/confirm?token={}",
+        base_url,
+        "subscription_token", // TODO: generate a unique token
     );
 
     let html_content = format!(
