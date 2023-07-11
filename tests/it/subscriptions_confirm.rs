@@ -6,7 +6,7 @@ use wiremock::{
     Mock, ResponseTemplate,
 };
 
-use crate::{init::TestApp, subscriptions::post_subscription_request};
+use crate::{helpers::get_confirmation_link, helpers::post_subscription_request, init::TestApp};
 
 #[actix_web::test]
 async fn confirmations_without_token_are_rejected_with_400() {
@@ -43,19 +43,7 @@ async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
     test::call_service(&server, req).await;
 
     let email_request = &email_server.received_requests().await.unwrap()[0];
-    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-
-    let get_link = |s: &str| {
-        let links: Vec<_> = linkify::LinkFinder::new()
-            .links(s)
-            .filter(|l| *l.kind() == linkify::LinkKind::Url)
-            .collect();
-
-        assert_eq!(links.len(), 1);
-        links[0].as_str().to_owned()
-    };
-
-    let confirmation_link = get_link(body["Messages"][0]["HTMLPart"].as_str().unwrap());
+    let confirmation_link = get_confirmation_link(&email_request.body);
     let url = Url::parse(&confirmation_link).unwrap();
     let host = url.host_str().unwrap();
     assert_eq!(host, "127.0.0.1"); // make sure the request is going only to local while testing

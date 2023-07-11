@@ -1,20 +1,14 @@
-use crate::init::TestApp;
-use actix_http::Request;
+use crate::{
+    helpers::{get_confirmation_link, post_subscription_request},
+    init::TestApp,
+};
 use actix_web::{http::StatusCode, test};
-use serde::Serialize;
 use wiremock::{
     matchers::{method, path},
     Mock, ResponseTemplate,
 };
 
 use std::vec;
-
-pub fn post_subscription_request(form: impl Serialize) -> Request {
-    test::TestRequest::post()
-        .uri("/subscriptions")
-        .set_form(form)
-        .to_request()
-}
 
 #[actix_web::test]
 async fn test_subscribe_returns_200_for_valid_form() {
@@ -163,21 +157,7 @@ async fn test_subscribe_sends_a_confirmation_email_with_a_link() {
     test::call_service(&server, req).await;
 
     let email_request = &email_server.received_requests().await.unwrap()[0];
-    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-
-    let get_link = |s: &str| {
-        let links: Vec<_> = linkify::LinkFinder::new()
-            .links(s)
-            .filter(|l| *l.kind() == linkify::LinkKind::Url)
-            .collect();
-
-        assert_eq!(links.len(), 1);
-        links[0].as_str().to_owned()
-    };
-
-    let html_link = get_link(body["Messages"][0]["HTMLPart"].as_str().unwrap());
-    let text_link = get_link(body["Messages"][0]["TextPart"].as_str().unwrap());
-    assert_eq!(html_link, text_link);
+    get_confirmation_link(&email_request.body);
 }
 
 // TODO: Add test for duplicate email
