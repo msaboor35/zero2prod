@@ -53,12 +53,13 @@ async fn test_subscribe_persists_the_new_subscriber() {
 
     test::call_service(&server, req).await;
 
-    let saved = sqlx::query!("SELECT email, name FROM subscriptions")
+    let saved = sqlx::query!("SELECT email, name, status FROM subscriptions")
         .fetch_one(conn)
         .await
         .expect("Failed to fetch saved subscription");
     assert_eq!(saved.email, "test@testdomain.com");
     assert_eq!(saved.name, "Testing tester");
+    assert_eq!(saved.status, "pending_confirmation");
 }
 
 #[actix_web::test]
