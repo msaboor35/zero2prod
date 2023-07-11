@@ -126,4 +126,39 @@ async fn test_subscribe_sends_a_confirmation_email_for_valid_data() {
     test::call_service(&server, req).await;
 }
 
+#[actix_web::test]
+async fn test_subscribe_sends_a_confirmation_email_with_a_link() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+    let email_server = app.get_email_server();
+
+    Mock::given(path("/v3.1/send"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(email_server)
+        .await;
+
+    let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
+    let req = post_subscription_request(form);
+
+    test::call_service(&server, req).await;
+
+    let email_request = &email_server.received_requests().await.unwrap()[0];
+    let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
+
+    let get_link = |s: &str| {
+        let links: Vec<_> = linkify::LinkFinder::new()
+            .links(s)
+            .filter(|l| *l.kind() == linkify::LinkKind::Url)
+            .collect();
+
+        assert_eq!(links.len(), 1);
+        links[0].as_str().to_owned()
+    };
+
+    let html_link = get_link(body["Messages"][0]["HTMLPart"].as_str().unwrap());
+    let text_link = get_link(body["Messages"][0]["TextPart"].as_str().unwrap());
+    assert_eq!(html_link, text_link);
+}
+
 // TODO: Add test for duplicate email
