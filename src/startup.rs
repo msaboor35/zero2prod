@@ -1,6 +1,6 @@
 use crate::configuration::{ApplicationSettings, DatabaseSettings, EmailClientSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::{health_check, subscribe};
+use crate::routes::{confirm, health_check, subscribe};
 use actix_http::body::BoxBody;
 use actix_web::dev::{Server, ServiceFactory, ServiceResponse};
 use actix_web::web::{Data, ServiceConfig};
@@ -80,5 +80,7 @@ fn run(
 }
 
 pub fn configure_app(cfg: &mut ServiceConfig) {
-    cfg.service(health_check).service(subscribe);
+    cfg.service(health_check)
+        .service(subscribe)
+        .service(confirm);
 }

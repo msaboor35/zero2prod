@@ -23,7 +23,7 @@ impl TryFrom<SubscriptionForm> for Subscriber {
     }
 }
 
-#[allow(clippy::async_yields_async, clippy::let_with_type_underscore)]
+#[allow(clippy::async_yields_async)]
 #[tracing::instrument(
     name = "Adding a new subscriber",
     skip(form, connection, email_client),
