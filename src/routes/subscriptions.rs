@@ -43,11 +43,15 @@ async fn subscribe(
     };
 
     if insert_subscription(&subscriber, &connection).await.is_err() {
-        return HttpResponse::InternalServerError()
+        return HttpResponse::InternalServerError();
     }
 
-    if email_client.send_email(subscriber.email, "Subject", "HTML Content", "Text Content").await.is_err() {
-        return HttpResponse::InternalServerError()
+    if email_client
+        .send_email(subscriber.email, "Subject", "HTML Content", "Text Content")
+        .await
+        .is_err()
+    {
+        return HttpResponse::InternalServerError();
     }
 
     HttpResponse::Ok()
