@@ -25,7 +25,7 @@ impl TryFrom<SubscriptionForm> for Subscriber {
 #[allow(clippy::async_yields_async, clippy::let_with_type_underscore)]
 #[tracing::instrument(
     name = "Adding a new subscriber",
-    skip(form, connection),
+    skip(form, connection, email_client),
     fields(
         subscriber_email = %form.email,
         subscriber_name = %form.name,
@@ -35,16 +35,22 @@ impl TryFrom<SubscriptionForm> for Subscriber {
 async fn subscribe(
     form: web::Form<SubscriptionForm>,
     connection: web::Data<PgPool>,
+    email_client: web::Data<crate::email_client::EmailClient>,
 ) -> impl Responder {
     let subscriber = match form.0.try_into() {
         Ok(subscriber) => subscriber,
         Err(_) => return HttpResponse::BadRequest(),
     };
 
-    match insert_subscription(&subscriber, &connection).await {
-        Ok(_) => HttpResponse::Ok(),
-        Err(_) => HttpResponse::InternalServerError(),
+    if insert_subscription(&subscriber, &connection).await.is_err() {
+        return HttpResponse::InternalServerError()
     }
+
+    if email_client.send_email(subscriber.email, "Subject", "HTML Content", "Text Content").await.is_err() {
+        return HttpResponse::InternalServerError()
+    }
+
+    HttpResponse::Ok()
 }
 
 #[tracing::instrument(
