@@ -106,7 +106,7 @@ async fn test_subscribe_sends_a_confirmation_email_for_valid_data() {
     let server = app.get_server().await;
     let email_server = app.get_email_server();
 
-    Mock::given(path("/email"))
+    Mock::given(path("/v3.1/send"))
         .and(method("POST"))
         .respond_with(ResponseTemplate::new(200))
         .expect(1)
