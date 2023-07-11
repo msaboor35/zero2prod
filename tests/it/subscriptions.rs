@@ -2,6 +2,10 @@ use crate::init::TestApp;
 use actix_http::Request;
 use actix_web::{http::StatusCode, test};
 use serde::Serialize;
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 use std::vec;
 
@@ -94,6 +98,25 @@ async fn test_subscribe_returns_400_when_data_is_missing() {
             &error_message
         );
     }
+}
+
+#[actix_web::test]
+async fn test_subscribe_sends_a_confirmation_email_for_valid_data() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+    let email_server = app.get_email_server();
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(email_server)
+        .await;
+
+    let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
+    let req = post_subscription_request(form);
+
+    test::call_service(&server, req).await;
 }
 
 // TODO: Add test for duplicate email

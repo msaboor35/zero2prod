@@ -3,6 +3,7 @@ use actix_web::dev::{Service, ServiceResponse};
 use actix_web::web::Data;
 use actix_web::{body::BoxBody, test};
 use sqlx::PgPool;
+use wiremock::MockServer;
 use std::sync::Once;
 use tracing_actix_web::StreamSpan;
 use uuid::Uuid;
@@ -16,16 +17,19 @@ static TRACING: Once = Once::new();
 pub struct TestApp {
     db_pool: PgPool,
     email_client: EmailClient,
+    email_server: MockServer,
     // server: Box<dyn Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error, Future = Box<dyn Future<Output = Result<ServiceResponse<StreamSpan<BoxBody>>, actix_web::Error>>>>>,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
         init_tracing();
+        let email_server = MockServer::start().await;
 
         let mut config = get_configuration().expect("Failed to read configuration");
         config.db.name = Uuid::new_v4().to_string();
         config.app.port = 0;
+        config.email_client.base_url = email_server.uri();
 
         init_test_db(&config.db).await;
 
@@ -35,6 +39,7 @@ impl TestApp {
         TestApp {
             db_pool,
             email_client,
+            email_server,
         }
     }
 
@@ -47,6 +52,10 @@ impl TestApp {
         let db_pool = Data::new(self.db_pool.clone());
         let email_client = Data::new(self.email_client.clone());
         test::init_service(new_app(db_pool, email_client)).await
+    }
+
+    pub fn get_email_server(&self) -> &MockServer {
+        &self.email_server
     }
 
     pub fn get_db_conn(&self) -> &PgPool {
