@@ -160,4 +160,23 @@ async fn test_subscribe_sends_a_confirmation_email_with_a_link() {
     get_confirmation_link(&email_request.body);
 }
 
+#[actix_web::test]
+async fn test_subscribe_fails_if_there_is_a_fatal_database_error() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+    let conn = app.get_db_conn();
+
+    sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN token")
+        .execute(conn)
+        .await
+        .expect("Failed to drop email column");
+
+    let form = &[("email", "test@testdomain.com"), ("name", "Testing tester")];
+    let req = post_subscription_request(form);
+
+    let resp = test::call_service(&server, req).await;
+
+    assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
+}
+
 // TODO: Add test for duplicate email
