@@ -16,6 +16,7 @@ name = "zero2prod"
 [dependencies]
 actix-http = "3.3.1"
 actix-web = "4.3.1"
+anyhow = "1.0.72"
 claims = "0.7.1"
 config = "0.13.3"
 fake = "2.6.1"
@@ -25,10 +26,11 @@ quickcheck_macros = "1.0.0"
 rand = { version = "0.8.5", features = ["std_rng"] }
 reqwest = { version = "0.11.18", features = ["json", "rustls-tls"] }
 secrecy = { version = "0.8.0", features = ["serde"] }
-serde = { version = "1.0.166", features = ["derive"] }
+serde = { version = "1.0.171", features = ["derive"] }
 serde-aux = "4.2.0"
-serde_json = "1.0.100"
+serde_json = "1.0.102"
 serde_urlencoded = "0.7.1"
+thiserror = "1.0.43"
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37", features = ["log"] }
 tracing-actix-web = "0.7.5"
