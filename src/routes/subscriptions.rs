@@ -113,7 +113,7 @@ async fn send_confirmation_email(
 
     email_client
         .send_email(
-            new_subscriber.email,
+            &new_subscriber.email,
             "Welcome to the Newsletter",
             &html_content,
             &text_content,
