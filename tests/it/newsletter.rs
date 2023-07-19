@@ -5,7 +5,7 @@ use wiremock::{
 };
 
 use crate::{
-    helpers::{get_confirmation_link, post_subscription_request},
+    helpers::{get_confirmation_link, post_newsletter, post_subscription_request},
     init::TestApp,
 };
 
@@ -31,10 +31,7 @@ async fn newsletter_are_not_delivered_to_unconfirmed_subscribers() {
         }
     });
 
-    let req = test::TestRequest::post()
-        .uri("/newsletter")
-        .set_json(newsletter_body)
-        .to_request();
+    let req = post_newsletter(&newsletter_body);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), actix_web::http::StatusCode::OK);
@@ -63,13 +60,62 @@ async fn newsletter_are_delivered_to_confirmed_subscribers() {
         }
     });
 
-    let req = test::TestRequest::post()
-        .uri("/newsletter")
-        .set_json(newsletter_body)
-        .to_request();
+    let req = post_newsletter(&newsletter_body);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), actix_web::http::StatusCode::OK);
+}
+
+#[actix_web::test]
+async fn newsletter_return_400_for_invalid_data() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+
+    let test_cases = vec![
+        (serde_json::json!({}), "missing title and content"),
+        (
+            serde_json::json!({"title": "Newsletter title"}),
+            "missing content",
+        ),
+        (
+            serde_json::json!({"content": {"text": "Newsletter content", "html": "<p>Newsletter content</p>"}}),
+            "missing title",
+        ),
+        (
+            serde_json::json!(
+                {
+                    "title": "Newsletter title",
+                    "content": {
+                        "html": "<p>Newsletter content</p>"
+                    }
+                }
+            ),
+            "missing text content",
+        ),
+        (
+            serde_json::json!(
+                {
+                    "title": "Newsletter title",
+                    "content": {
+                        "text": "Newsletter content"
+                    }
+                }
+            ),
+            "missing html content",
+        ),
+    ];
+
+    for (body, error) in test_cases {
+        let req = post_newsletter(&body);
+
+        let resp = test::call_service(&server, req).await;
+        assert_eq!(
+            resp.status(),
+            actix_web::http::StatusCode::BAD_REQUEST,
+            "The API did not return with 400 Bad request when the payload was {}",
+            error
+        );
+    }
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> String {

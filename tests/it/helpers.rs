@@ -28,3 +28,10 @@ pub fn post_subscription_request(form: impl Serialize) -> Request {
         .set_form(form)
         .to_request()
 }
+
+pub fn post_newsletter(body: &serde_json::Value) -> Request {
+    test::TestRequest::post()
+        .uri("/newsletter")
+        .set_json(body)
+        .to_request()
+}
