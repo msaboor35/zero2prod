@@ -1,5 +1,8 @@
 use actix_web::{post, web, HttpResponse, Responder, ResponseError};
+use anyhow::Context;
 use sqlx::PgPool;
+
+use crate::{domain::subscriber_email::SubscriberEmail, email_client::EmailClient};
 
 use super::error_chain_fmt;
 
@@ -36,26 +39,47 @@ impl ResponseError for PublishError {
 }
 
 #[allow(clippy::async_yields_async, clippy::let_with_type_underscore)]
-#[tracing::instrument(name = "Publish newsletter request", skip(_body, pool))]
+#[tracing::instrument(name = "Publish newsletter request", skip(body, pool, email_client))]
 #[post("/newsletter")]
 async fn publish_newsletter(
-    _body: web::Json<NewsletterBody>,
+    body: web::Json<NewsletterBody>,
     pool: web::Data<PgPool>,
+    email_client: web::Data<EmailClient>,
 ) -> Result<impl Responder, PublishError> {
-    let _subscribers = get_confirmed_subscribers(&pool).await?;
+    let subscribers = get_confirmed_subscribers(&pool).await?;
+    for subscriber in subscribers {
+        match subscriber {
+            Ok(subscriber) => email_client
+                .send_email(
+                    &subscriber.email,
+                    &body.title,
+                    &body.content.html,
+                    &body.content.text,
+                )
+                .await
+                .with_context(|| {
+                    format!(
+                        "Failed to send email to the subscriber {:}",
+                        subscriber.email
+                    )
+                })?,
+            Err(e) => {
+                tracing::warn!(e.cause_chain = ?e, "Skipping invalid subscriber: {:?}. The stored email is invalid", e);
+            }
+        }
+    }
     Ok(HttpResponse::Ok())
 }
 
 struct ConfirmedSubscriber {
-    email: String,
+    email: SubscriberEmail,
 }
 
 #[tracing::instrument(name = "Create subscription request", skip(pool))]
 async fn get_confirmed_subscribers(
     pool: &PgPool,
-) -> Result<Vec<ConfirmedSubscriber>, anyhow::Error> {
-    let rows = sqlx::query_as!(
-        ConfirmedSubscriber,
+) -> Result<Vec<Result<ConfirmedSubscriber, anyhow::Error>>, anyhow::Error> {
+    let rows = sqlx::query!(
         r#"
         SELECT email
         FROM subscriptions
@@ -65,5 +89,13 @@ async fn get_confirmed_subscribers(
     .fetch_all(pool)
     .await?;
 
-    Ok(rows)
+    let confirmed_subscribers = rows
+        .into_iter()
+        .map(|r| match SubscriberEmail::parse(r.email) {
+            Ok(email) => Ok(ConfirmedSubscriber { email }),
+            Err(e) => Err(anyhow::anyhow!(e)),
+        })
+        .collect();
+
+    Ok(confirmed_subscribers)
 }
