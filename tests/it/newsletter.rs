@@ -1,3 +1,4 @@
+use actix_http::header::HeaderValue;
 use actix_web::test;
 use wiremock::{
     matchers::{any, method, path},
@@ -5,7 +6,10 @@ use wiremock::{
 };
 
 use crate::{
-    helpers::{get_confirmation_link, post_newsletter, post_subscription_request},
+    helpers::{
+        add_test_user, basic_auth, get_confirmation_link, post_newsletter,
+        post_subscription_request,
+    },
     init::TestApp,
 };
 
@@ -14,6 +18,7 @@ async fn newsletter_are_not_delivered_to_unconfirmed_subscribers() {
     let app = TestApp::new().await;
     let server = app.get_server().await;
     let email_server = app.get_email_server();
+    let pool = app.get_db_conn();
 
     create_unconfirmed_subscriber(&app).await;
 
@@ -31,7 +36,11 @@ async fn newsletter_are_not_delivered_to_unconfirmed_subscribers() {
         }
     });
 
-    let req = post_newsletter(&newsletter_body);
+    let (_, username, password) = add_test_user(pool).await;
+    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &password)).unwrap();
+    let mut req = post_newsletter(&newsletter_body);
+    req.headers_mut()
+        .insert(actix_http::header::AUTHORIZATION, auth_header_val);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), actix_web::http::StatusCode::OK);
@@ -42,6 +51,7 @@ async fn newsletter_are_delivered_to_confirmed_subscribers() {
     let app = TestApp::new().await;
     let server = app.get_server().await;
     let email_server = app.get_email_server();
+    let pool = app.get_db_conn();
 
     create_confirmed_subscriber(&app).await;
 
@@ -60,7 +70,11 @@ async fn newsletter_are_delivered_to_confirmed_subscribers() {
         }
     });
 
-    let req = post_newsletter(&newsletter_body);
+    let (_, username, password) = add_test_user(pool).await;
+    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &password)).unwrap();
+    let mut req = post_newsletter(&newsletter_body);
+    req.headers_mut()
+        .insert(actix_http::header::AUTHORIZATION, auth_header_val);
 
     let resp = test::call_service(&server, req).await;
     assert_eq!(resp.status(), actix_web::http::StatusCode::OK);
@@ -116,6 +130,31 @@ async fn newsletter_return_400_for_invalid_data() {
             error
         );
     }
+}
+
+#[actix_web::test]
+async fn newsletter_returns_401_when_authorization_headers_are_missing() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+
+    let newsletter_body = serde_json::json!({
+        "title": "Newsletter title",
+        "content": {
+            "text": "Newsletter content",
+            "html": "<p>Newsletter content</p>"
+        }
+    });
+
+    let req = post_newsletter(&newsletter_body);
+    let resp = test::call_service(&server, req).await;
+
+    assert_eq!(401, resp.status());
+
+    let auth_header = resp
+        .headers()
+        .get("WWW-Authenticate")
+        .map(|r| r.to_str().unwrap());
+    assert_eq!(Some(r#"Basic realm="publish""#), auth_header);
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> String {

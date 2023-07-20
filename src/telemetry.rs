@@ -1,7 +1,11 @@
 use tracing::{subscriber::set_global_default, Subscriber};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_log::LogTracer;
-use tracing_subscriber::{fmt::MakeWriter, layer::SubscriberExt, EnvFilter, Registry};
+use tracing_subscriber::{
+    fmt::{format::FmtSpan, MakeWriter},
+    layer::SubscriberExt,
+    EnvFilter, Registry,
+};
 
 pub fn get_subscriber<Sink>(
     name: String,
@@ -14,10 +18,13 @@ where
     let env_filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(env_filter));
     let formatting_layer = BunyanFormattingLayer::new(name, sink);
+    let span_events_layer = tracing_subscriber::fmt::layer().with_span_events(FmtSpan::FULL);
+
     Registry::default()
         .with(env_filter)
         .with(JsonStorageLayer)
         .with(formatting_layer)
+        .with(span_events_layer)
 }
 
 pub fn init_subscriber(subscriber: impl Subscriber + Send + Sync) {
