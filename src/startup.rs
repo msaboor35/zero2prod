@@ -1,7 +1,7 @@
 use crate::configuration::{ApplicationSettings, DatabaseSettings, EmailClientSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::newsletter::publish_newsletter;
-use crate::routes::{confirm, health_check, home, subscribe};
+use crate::routes::{confirm, health_check, home, login, login_form, subscribe};
 use actix_http::body::BoxBody;
 use actix_web::dev::{Server, ServiceFactory, ServiceResponse};
 use actix_web::web::{Data, ServiceConfig};
@@ -92,5 +92,7 @@ pub fn configure_app(cfg: &mut ServiceConfig) {
         .service(subscribe)
         .service(confirm)
         .service(publish_newsletter)
-        .service(home);
+        .service(home)
+        .service(login_form)
+        .service(login);
 }
