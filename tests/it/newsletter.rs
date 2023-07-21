@@ -148,7 +148,72 @@ async fn newsletter_returns_401_when_authorization_headers_are_missing() {
     let req = post_newsletter(&newsletter_body);
     let resp = test::call_service(&server, req).await;
 
-    assert_eq!(401, resp.status());
+    assert_eq!(actix_web::http::StatusCode::UNAUTHORIZED, resp.status());
+
+    let auth_header = resp
+        .headers()
+        .get("WWW-Authenticate")
+        .map(|r| r.to_str().unwrap());
+    assert_eq!(Some(r#"Basic realm="publish""#), auth_header);
+}
+
+#[actix_web::test]
+async fn non_existing_user_is_rejected() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+
+    let newsletter_body = serde_json::json!({
+        "title": "Newsletter title",
+        "content": {
+            "text": "Newsletter content",
+            "html": "<p>Newsletter content</p>"
+        }
+    });
+
+    let username = uuid::Uuid::new_v4().to_string();
+    let password = uuid::Uuid::new_v4().to_string();
+    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &password)).unwrap();
+
+    let mut req = post_newsletter(&newsletter_body);
+    req.headers_mut()
+        .insert(actix_http::header::AUTHORIZATION, auth_header_val);
+
+    let resp = test::call_service(&server, req).await;
+    assert_eq!(resp.status(), actix_web::http::StatusCode::UNAUTHORIZED);
+
+    let auth_header = resp
+        .headers()
+        .get("WWW-Authenticate")
+        .map(|r| r.to_str().unwrap());
+    assert_eq!(Some(r#"Basic realm="publish""#), auth_header);
+}
+
+#[actix_web::test]
+async fn invalid_password_is_rejected() {
+    let app = TestApp::new().await;
+    let server = app.get_server().await;
+    let pool = app.get_db_conn();
+
+    let newsletter_body = serde_json::json!({
+        "title": "Newsletter title",
+        "content": {
+            "text": "Newsletter content",
+            "html": "<p>Newsletter content</p>"
+        }
+    });
+
+    let (_, username, password) = add_test_user(pool).await;
+
+    let invalid_password = uuid::Uuid::new_v4().to_string();
+    assert_ne!(password, invalid_password);
+    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &password)).unwrap();
+
+    let mut req = post_newsletter(&newsletter_body);
+    req.headers_mut()
+        .insert(actix_http::header::AUTHORIZATION, auth_header_val);
+
+    let resp = test::call_service(&server, req).await;
+    assert_eq!(resp.status(), actix_web::http::StatusCode::UNAUTHORIZED);
 
     let auth_header = resp
         .headers()

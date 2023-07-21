@@ -163,10 +163,15 @@ async fn validate_credentials(
     credentials: Credentials,
     pool: &PgPool,
 ) -> Result<uuid::Uuid, PublishError> {
-    let (id, expected_password_hash) = get_credentials(pool, &credentials.username)
+    let mut id = None;
+    let mut expected_password_hash = Secret::new("$argon2id$v=19$m=19456,t=2,p=1$gZiV/M1gPc22ElAH/Jh1Hw$CWOrkoo7oJBQ/iyh7uJ0LO2aLEfrHwTWllSAxT0zRno".to_string());
+    if let Some((stored_id, stored_password_hash)) = get_credentials(pool, &credentials.username)
         .await
-        .context("Failed to retrieve stored credentials.")?
-        .ok_or_else(|| PublishError::AuthError(anyhow!("Unknown username")))?;
+        .map_err(PublishError::UnexpectedError)?
+    {
+        id = Some(stored_id);
+        expected_password_hash = stored_password_hash;
+    }
 
     let current_span = tracing::Span::current();
     tokio::task::spawn_blocking(move || {
@@ -174,11 +179,9 @@ async fn validate_credentials(
     })
     .await
     .context("Failed to spawn blocking task")
-    .map_err(PublishError::UnexpectedError)?
-    .context("Invalid username or password.")
-    .map_err(PublishError::AuthError)?;
+    .map_err(PublishError::UnexpectedError)??;
 
-    Ok(id)
+    id.ok_or_else(|| PublishError::AuthError(anyhow!("Unknown username")))
 }
 
 #[tracing::instrument(
