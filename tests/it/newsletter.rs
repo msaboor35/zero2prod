@@ -206,7 +206,7 @@ async fn invalid_password_is_rejected() {
 
     let invalid_password = uuid::Uuid::new_v4().to_string();
     assert_ne!(password, invalid_password);
-    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &password)).unwrap();
+    let auth_header_val = HeaderValue::from_str(&basic_auth(&username, &invalid_password)).unwrap();
 
     let mut req = post_newsletter(&newsletter_body);
     req.headers_mut()
