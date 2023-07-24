@@ -2,6 +2,7 @@ use actix_http::Request;
 use actix_web::dev::{Service, ServiceResponse};
 use actix_web::web::Data;
 use actix_web::{body::BoxBody, test};
+use secrecy::Secret;
 use sqlx::PgPool;
 use std::sync::Once;
 use tracing_actix_web::StreamSpan;
@@ -9,7 +10,7 @@ use uuid::Uuid;
 use wiremock::MockServer;
 use zero2prod::configuration::{get_configuration, DatabaseSettings};
 use zero2prod::email_client::EmailClient;
-use zero2prod::startup::{init_db, init_email_client, new_app, ApplicationBaseUrl};
+use zero2prod::startup::{init_db, init_email_client, new_app, ApplicationBaseUrl, HmacSecret};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 static TRACING: Once = Once::new();
@@ -19,6 +20,7 @@ pub struct TestApp {
     email_client: EmailClient,
     email_server: MockServer,
     base_url: ApplicationBaseUrl,
+    hmac_secret: Secret<String>,
     // server: Box<dyn Service<Request, Response = ServiceResponse<StreamSpan<BoxBody>>, Error = actix_web::Error, Future = Box<dyn Future<Output = Result<ServiceResponse<StreamSpan<BoxBody>>, actix_web::Error>>>>>,
 }
 
@@ -37,12 +39,14 @@ impl TestApp {
         let db_pool = init_db(&config.db);
         let email_client = init_email_client(&config.email_client);
         let base_url = ApplicationBaseUrl(config.app.base_url);
+        let hmac_secret = config.app.hmac_secret;
 
         TestApp {
             db_pool,
             email_client,
             email_server,
             base_url,
+            hmac_secret,
         }
     }
 
@@ -55,7 +59,8 @@ impl TestApp {
         let db_pool = Data::new(self.db_pool.clone());
         let email_client = Data::new(self.email_client.clone());
         let base_url = Data::new(self.base_url.clone());
-        test::init_service(new_app(db_pool, email_client, base_url)).await
+        let hmac_secret = HmacSecret(self.hmac_secret.clone());
+        test::init_service(new_app(db_pool, email_client, base_url, hmac_secret)).await
     }
 
     pub fn get_email_server(&self) -> &MockServer {

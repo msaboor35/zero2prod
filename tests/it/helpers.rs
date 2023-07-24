@@ -1,9 +1,12 @@
-use actix_http::Request;
-use actix_web::test;
+use std::collections::HashSet;
+
+use actix_http::{body::BoxBody, Request};
+use actix_web::{dev::ServiceResponse, http, test};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use base64::{engine::general_purpose, Engine};
 use serde::Serialize;
 use sqlx::PgPool;
+use tracing_actix_web::StreamSpan;
 use uuid::Uuid;
 
 pub fn get_confirmation_link(body: &[u8]) -> String {
@@ -70,4 +73,16 @@ pub async fn add_test_user(pool: &PgPool) -> (Uuid, String, String) {
     .expect("Failed to insert test user");
 
     (id, username, password)
+}
+
+pub fn post_login(body: impl Serialize) -> Request {
+    test::TestRequest::post()
+        .uri("/login")
+        .set_form(body)
+        .to_request()
+}
+
+pub fn assert_is_redirect_to(response: &ServiceResponse<StreamSpan<BoxBody>>, location: &str) {
+    assert_eq!(response.status(), http::StatusCode::SEE_OTHER);
+    assert_eq!(response.headers().get("location").unwrap(), location);
 }
